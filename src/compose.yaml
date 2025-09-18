@@ -1,0 +1,35 @@
+﻿services:
+  
+  ### Service Catalog ###
+  catalog.database:
+    image: postgres:latest
+    container_name: catalog_database
+    networks:
+      - catalog_network
+  
+  catalog.api:
+    image: catalog.api
+    container_name: catalog_api
+    build:
+      context: .
+      dockerfile: eShop.services/catalog/Catalog.API/Dockerfile
+    networks:
+      - catalog_network
+    depends_on:
+      catalog.database:
+        condition: service_healthy
+        required: true
+        restart: true
+
+
+### Shared infrastructure ###
+volumes:
+  catalog_data:
+    name: catalog_data
+
+
+networks:
+  catalog_network:
+    name: catalog_network
+
+

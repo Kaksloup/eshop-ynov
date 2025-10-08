@@ -34,4 +34,7 @@ public class ProductNotFoundException : NotFoundException
     
     public ProductNotFoundException(string category)
         : base("produit", $"catégorie '{category}'") { }
+    
+    public ProductNotFoundException(decimal price)
+        : base("produit", $"prix '{price}'") { }
 }

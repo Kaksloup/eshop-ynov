@@ -1,6 +1,9 @@
 using Catalog.API.Features.Products.Commands.CreateProduct;
+using Catalog.API.Features.Products.Commands.DeleteProduct;
 using Catalog.API.Features.Products.Commands.UpdateProduct;
 using Catalog.API.Features.Products.Queries.GetProductById;
+using Catalog.API.Features.Products.Queries.GetProducts;
+using Catalog.API.Features.Products.Queries.GetProductsByCategory;
 using Catalog.API.Models;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -41,12 +44,11 @@ public class ProductsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(BadRequestObjectResult), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Product>> GetProductsByCategory(string category)
     {
-        // TODO
         if (string.IsNullOrWhiteSpace(category))
             return BadRequest("Category is required");
         
-        var result = await sender.Send(new ());
-        return Ok();
+        var result = await sender.Send(new GetProductsByCategoryQuery(category));
+        return Ok(result.Products);
     }
 
     /// <summary>
@@ -59,9 +61,12 @@ public class ProductsController(ISender sender) : ControllerBase
         [FromQuery] int pageNumber
        , [FromQuery] int pageSize)
     {
-        // TODO
-        var result = await sender.Send(new ()); 
-        return Ok();
+        // By default, return the first page with 10 items if parameters are not provided or invalid
+        pageNumber = pageNumber < 1 ? 1 : pageNumber;
+        pageSize = pageSize < 1 ? 10 : pageSize;
+        
+        var result = await sender.Send(new GetProductsQuery(pageNumber, pageSize));
+        return Ok(result.Products);
     }
 
     /// <summary>
@@ -88,7 +93,6 @@ public class ProductsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(NotFoundObjectResult), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> UpdateProduct(Guid id, [FromBody] UpdateProductCommand request)
     {
-        // TODO
         var result = await sender.Send(request);
         return Ok(result.IsSuccessful);
     }
@@ -103,9 +107,8 @@ public class ProductsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(NotFoundObjectResult), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Product>> DeleteProduct(Guid id)
     {
-        // TODO
-        var result = await sender.Send(new ());
-        return Ok();
+        var result = await sender.Send(new DeleteProductCommand(id));
+        return Ok(result.IsSuccessful);
     }
     
     // TODO : faire une ressource pour importer à partir d'un fichier excel les produits

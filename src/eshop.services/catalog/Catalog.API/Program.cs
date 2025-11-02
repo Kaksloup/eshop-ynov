@@ -36,6 +36,23 @@ builder.Services.AddMarten(options =>
 if(builder.Environment.IsDevelopment())
     builder.Services.InitializeMartenWith<CatalogInitialData>();
 
+// gRPC Client - Discount Service
+builder.Services.AddGrpcClient<Discount.Grpc.DiscountProtoService.DiscountProtoServiceClient>(options =>
+{
+    options.Address = new Uri(configuration["GrpcSettings:DiscountUrl"] 
+        ?? "http://localhost:6062");
+}).ConfigurePrimaryHttpMessageHandler(() =>
+{
+    var handler = new HttpClientHandler();
+    if (builder.Environment.IsDevelopment())
+    {
+        // Ignore certificate validation in development
+        handler.ServerCertificateCustomValidationCallback = 
+            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+    }
+    return handler;
+});
+
 // Health Check
 builder.Services.AddHealthChecks()
     .AddNpgSql(configuration.GetConnectionString("CatalogConnection")!);

@@ -1,3 +1,5 @@
+using Catalog.API.DTOs;
+
 namespace Catalog.API.Models;
 
 /// <summary>
@@ -22,7 +24,7 @@ public class Product
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the price of the product.
+    /// Gets or sets the base price of the product (without discount).
     /// </summary>
     public decimal Price { get; set; }
 
@@ -35,4 +37,22 @@ public class Product
     /// Gets or sets the list of categories associated with the product.
     /// </summary>
     public List<string> Categories { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the discount information for this product (if any).
+    /// This property is populated dynamically from the Discount Service and not stored in the database.
+    /// </summary>
+    public DiscountInfoDto? Discount { get; set; }
+
+    /// <summary>
+    /// Gets the final price after applying the discount (if any).
+    /// Supports multiple discount types: Percentage, FixedAmount, and Combined.
+    /// If no discount exists or is inactive, returns the base Price.
+    /// </summary>
+    public decimal FinalPrice => Catalog.API.Extensions.DiscountCalculator.CalculateFinalPrice(Price, Discount);
+    
+    /// <summary>
+    /// Gets the total amount saved with the discount.
+    /// </summary>
+    public decimal DiscountAmount => Catalog.API.Extensions.DiscountCalculator.CalculateDiscountAmount(Price, Discount);
 }

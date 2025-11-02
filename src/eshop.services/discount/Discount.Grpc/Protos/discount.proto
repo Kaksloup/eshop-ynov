@@ -19,11 +19,24 @@ message GetDiscountRequest {
   string productName = 1;
 }
 
+enum DiscountType {
+  NONE = 0;
+  PERCENTAGE = 1;
+  FIXED_AMOUNT = 2;
+  COMBINED = 3;
+}
+
 message CouponModel {
   int32 id = 1;
   string productName = 2;
   string description = 3;
-  double amount = 4;
+  DiscountType discountType = 4;
+  double percentage = 5;
+  double amount = 6;
+  string couponCode = 7;
+  bool isActive = 8;
+  bool isStackable = 9;
+  double maxStackablePercentage = 10;
 }
 
 message CreateDiscountRequest {

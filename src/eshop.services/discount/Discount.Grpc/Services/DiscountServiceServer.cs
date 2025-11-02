@@ -1,22 +1,25 @@
-using Discount.Grpc.Data;
+using Discount.Grpc.Features.Discounts.Commands.CreateDiscount;
+using Discount.Grpc.Features.Discounts.Commands.DeleteDiscount;
+using Discount.Grpc.Features.Discounts.Commands.UpdateDiscount;
+using Discount.Grpc.Features.Discounts.Queries.GetDiscount;
 using Discount.Grpc.Models;
 using Grpc.Core;
 using Mapster;
-using Microsoft.EntityFrameworkCore;
+using MediatR;
 
 namespace Discount.Grpc.Services;
 
 /// <summary>
 /// The DiscountServiceServer class implements the gRPC service for managing discount data.
-/// It provides CRUD operations for discounts and communicates with the underlying database using a DbContext.
-/// This class inherits from DiscountProtoServiceBase, which defines the service methods in the gRPC contract,
-/// and implements the necessary logic for handling those methods.
+/// It provides CRUD operations for discounts using CQRS pattern with MediatR.
+/// This class inherits from DiscountProtoServiceBase and orchestrates commands and queries
+/// through the MediatR pipeline.
 /// </summary>
 /// <remarks>
-/// This class uses the DiscountContext for database interactions and ILogger for logging purposes.
-/// It is registered with the gRPC pipeline in the application startup configuration.
+/// This class uses MediatR (ISender) to dispatch commands and queries to their respective handlers,
+/// following the CQRS architectural pattern for better separation of concerns and testability.
 /// </remarks>
-public class DiscountServiceServer(DiscountContext dbContext, ILogger<DiscountServiceServer> logger) : DiscountProtoService.DiscountProtoServiceBase
+public class DiscountServiceServer(ISender sender, ILogger<DiscountServiceServer> logger) : DiscountProtoService.DiscountProtoServiceBase
 {
     /// <summary>
     /// Retrieves discount details for a given product from the database.
@@ -31,16 +34,18 @@ public class DiscountServiceServer(DiscountContext dbContext, ILogger<DiscountSe
     /// </exception>
     public override async Task<CouponModel> GetDiscount(GetDiscountRequest request, ServerCallContext context)
     {
-        logger.LogInformation("Retrieving discount for {ProductName}", request.ProductName);
-        
-        var coupon = await dbContext.Coupons.FirstOrDefaultAsync(x => x.ProductName == request.ProductName);
-        
-        if (coupon == null)
-            throw new RpcException(new Status(StatusCode.NotFound, $"Coupon with name {request.ProductName} not found"));
-        
-        logger.LogInformation("Discount retrieved for {ProductName}: {Amount}", coupon.ProductName, coupon.Amount);
-        
-        return coupon.Adapt<CouponModel>();
+        try
+        {
+            var query = new GetDiscountQuery(request.ProductName);
+            var result = await sender.Send(query, context.CancellationToken);
+            
+            return result.Coupon.Adapt<CouponModel>();
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning(ex, "Discount not found for {ProductName}", request.ProductName);
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
     }
 
     /// <summary>
@@ -60,11 +65,10 @@ public class DiscountServiceServer(DiscountContext dbContext, ILogger<DiscountSe
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Coupon is null"));
         
         var coupon = request.Coupon.Adapt<Coupon>();
-        logger.LogInformation("Creating new discount for {ProductName}", coupon.ProductName);
-        await dbContext.Coupons.AddAsync(coupon);
-        await dbContext.SaveChangesAsync();
-        logger.LogInformation("Discount created for {ProductName}: {Amount}", coupon.ProductName, coupon.Amount);
-        return coupon.Adapt<CouponModel>();
+        var command = new CreateDiscountCommand(coupon);
+        var result = await sender.Send(command, context.CancellationToken);
+        
+        return result.Coupon.Adapt<CouponModel>();
     }
 
     /// <summary>
@@ -83,20 +87,19 @@ public class DiscountServiceServer(DiscountContext dbContext, ILogger<DiscountSe
         if (request.Coupon is null)
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Coupon is null"));
         
-        logger.LogInformation("Updating discount for {ProductName}", request.Coupon.ProductName);
-
-        var coupon = await dbContext.Coupons.FirstOrDefaultAsync(x => x.ProductName == request.Coupon.ProductName 
-                                                                      || x.Id == request.Coupon.Id);
-        if(coupon is null)
-            throw new RpcException(new Status(StatusCode.NotFound, $"Coupon with name {request.Coupon.ProductName} " +
-                                                                   $" or Id {request.Coupon.Id} not found"));
-        request.Coupon.Adapt(coupon);
-        
-        dbContext.Coupons.Update(coupon);
-        await dbContext.SaveChangesAsync();
-        
-        logger.LogInformation("Discount updated for {ProductName}: {Amount}", coupon.ProductName, coupon.Amount);
-        return coupon.Adapt<CouponModel>();
+        try
+        {
+            var coupon = request.Coupon.Adapt<Coupon>();
+            var command = new UpdateDiscountCommand(coupon);
+            var result = await sender.Send(command, context.CancellationToken);
+            
+            return result.Coupon.Adapt<CouponModel>();
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning(ex, "Coupon not found for update");
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
     }
 
     /// <summary>
@@ -116,17 +119,17 @@ public class DiscountServiceServer(DiscountContext dbContext, ILogger<DiscountSe
         if (request.Coupon is null)
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Coupon is null"));
 
-        logger.LogInformation("Deleting discount for {ProductName}", request.Coupon.ProductName);
-        
-        var coupon = await dbContext.Coupons.FirstOrDefaultAsync(x => x.ProductName == request.Coupon.ProductName 
-                                                                      || x.Id == request.Coupon.Id);
-        if(coupon is null)
-            throw new RpcException(new Status(StatusCode.NotFound, $"Coupon with name {request.Coupon.ProductName} " +
-                                                                   $" or Id {request.Coupon.Id} not found"));
-        dbContext.Coupons.Remove(coupon);
-        await dbContext.SaveChangesAsync();
-        logger.LogInformation("Discount deleted for {ProductName}", coupon.ProductName);
-        
-        return new DeleteDiscountResponse(){Success = true};
+        try
+        {
+            var command = new DeleteDiscountCommand(request.Coupon.ProductName, request.Coupon.Id);
+            var result = await sender.Send(command, context.CancellationToken);
+            
+            return new DeleteDiscountResponse { Success = result.Success };
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning(ex, "Coupon not found for deletion");
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
     }
 }

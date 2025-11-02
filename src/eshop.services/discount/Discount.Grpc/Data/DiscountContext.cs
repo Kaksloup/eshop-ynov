@@ -1,18 +1,22 @@
 using Discount.Grpc.Models;
-using Microsoft.EntityFrameworkCore;
+using Marten;
 
 namespace Discount.Grpc.Data;
 
-public sealed class DiscountContext(DbContextOptions<DiscountContext> options) : DbContext(options)
+/// <summary>
+/// Marten configuration for the Discount service.
+/// This replaces the EF Core DbContext with Marten's document store.
+/// </summary>
+public static class DiscountStoreConfiguration
 {
-    public DbSet<Coupon> Coupons { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    /// <summary>
+    /// Configures Marten for storing Coupon documents in PostgreSQL.
+    /// </summary>
+    public static void ConfigureMarten(this StoreOptions options)
     {
-        modelBuilder.Entity<Coupon>().ToTable("Coupon")
-            .HasData([
-                new Coupon {Id = 1, ProductName = "IPhone X", Description = "IPhone X New", Amount = 150.0},
-                new Coupon {Id = 2, ProductName = "Samsung 10", Description = "Samsung 10 New", Amount = 100.0}   
-            ]);
+        // Configure the Coupon document
+        options.Schema.For<Coupon>()
+            .Identity(x => x.Id)
+            .DocumentAlias("coupons");
     }
 }

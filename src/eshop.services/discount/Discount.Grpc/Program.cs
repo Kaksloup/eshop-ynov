@@ -1,7 +1,9 @@
+using BuildingBlocks.Behaviors;
 using Discount.Grpc.Data;
-using Discount.Grpc.Data.Extensions;
+using Discount.Grpc.Data.Repositories;
 using Discount.Grpc.Services;
-using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using Marten;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,11 +12,27 @@ var configuration = builder.Configuration;
 // Add services to the container.
 builder.Services.AddGrpc();
 
-builder.Services.AddDbContext<DiscountContext>(options => options.UseSqlite(configuration.GetConnectionString("DiscountConnection")));
+// Marten - PostgreSQL Document Database (same as Catalog)
+builder.Services.AddMarten(options =>
+{
+    options.Connection(configuration.GetConnectionString("DiscountConnection") ?? string.Empty);
+    options.ConfigureMarten();
+}).UseLightweightSessions();
+
+// Repository Pattern
+builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
+
+// Mediator Pattern - CQRS
+builder.Services.AddMediatR(config =>
+{
+    config.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    config.AddOpenBehavior(typeof(ValidationBehavior<,>));
+    config.AddOpenBehavior(typeof(LoggingBehavior<,>));
+});
+
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
 var app = builder.Build();
-
-app.UseCustomMigration();
 
 // Configure the HTTP request pipeline.
 app.MapGrpcService<DiscountServiceServer>();

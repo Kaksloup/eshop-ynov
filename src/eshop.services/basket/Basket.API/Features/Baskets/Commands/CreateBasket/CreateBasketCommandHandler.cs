@@ -31,7 +31,8 @@ public class CreateBasketCommandHandler(IBasketRepository repository, DiscountPr
     }
 
     /// <summary>
-    /// Applies a discount to each item in the specified shopping cart.
+    /// Applies discounts to each item in the specified shopping cart.
+    /// Supports multiple discount types: Percentage, FixedAmount, and Combined.
     /// </summary>
     /// <param name="cart">The shopping cart containing the items to which the discount will be applied.</param>
     /// <param name="cancellationToken">A token to observe while waiting for the operation to complete.</param>
@@ -43,7 +44,17 @@ public class CreateBasketCommandHandler(IBasketRepository repository, DiscountPr
             var coupon = await discountProtoServiceClient.GetDiscountAsync(new GetDiscountRequest
                 { ProductName = item.ProductName }, cancellationToken: cancellationToken);
             
-            item.Price -= (decimal)coupon.Amount;
+            // Skip if coupon is inactive
+            if (!coupon.IsActive)
+                continue;
+            
+            // Apply discount based on type
+            item.Price = Basket.API.Extensions.DiscountCalculator.ApplyDiscount(
+                item.Price,
+                (int)coupon.DiscountType,
+                coupon.Percentage,
+                coupon.Amount
+            );
         }
     }
 }

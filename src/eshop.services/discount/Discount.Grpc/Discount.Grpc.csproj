@@ -25,17 +25,17 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Mapster" Version="7.4.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.7" />
+        <PackageReference Include="Marten" Version="8.3.1" />
     </ItemGroup>
 
     <ItemGroup>
         <Content Include="..\..\..\.dockerignore">
             <Link>.dockerignore</Link>
         </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\eshop.shared\blocks\BuildingBlocks\BuildingBlocks.csproj" />
     </ItemGroup>
 
 </Project>

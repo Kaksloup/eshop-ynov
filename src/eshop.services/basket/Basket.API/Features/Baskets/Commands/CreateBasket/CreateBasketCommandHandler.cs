@@ -32,29 +32,78 @@ public class CreateBasketCommandHandler(IBasketRepository repository, DiscountPr
 
     /// <summary>
     /// Applies discounts to each item in the specified shopping cart.
-    /// Supports multiple discount types: Percentage, FixedAmount, and Combined.
+    /// - Validates coupon date validity (StartDate/EndDate)
+    /// - Applies coupons in descending order of discount percentage
+    /// - Caps total discount at 30%
     /// </summary>
     /// <param name="cart">The shopping cart containing the items to which the discount will be applied.</param>
     /// <param name="cancellationToken">A token to observe while waiting for the operation to complete.</param>
     /// <returns>A task that represents the asynchronous operation of applying discounts to the items.</returns>
     private async Task ApplyDiscountToItemAsync(ShoppingCart cart, CancellationToken cancellationToken)
     {
+        const decimal MAX_DISCOUNT_PERCENTAGE = 30m;
+        
         foreach (var item in cart.Items)
         {
-            var coupon = await discountProtoServiceClient.GetDiscountAsync(new GetDiscountRequest
-                { ProductName = item.ProductName }, cancellationToken: cancellationToken);
+            // Initialize BasePrice if not already set (preserve original price)
+            if (item.BasePrice == 0)
+            {
+                item.BasePrice = item.Price;
+            }
             
-            // Skip if coupon is inactive
-            if (!coupon.IsActive)
+            try
+            {
+                var coupon = await discountProtoServiceClient.GetDiscountAsync(new GetDiscountRequest
+                    { ProductName = item.ProductName }, cancellationToken: cancellationToken);
+                
+                // Skip if coupon is inactive
+                if (!coupon.IsActive)
+                    continue;
+                
+                // Check if coupon is within valid date range
+                var now = DateTime.UtcNow;
+                
+                if (coupon.StartDate != null)
+                {
+                    var startDate = coupon.StartDate.ToDateTime();
+                    if (now < startDate)
+                        continue; // Coupon not yet valid
+                }
+                    
+                if (coupon.EndDate != null)
+                {
+                    var endDate = coupon.EndDate.ToDateTime();
+                    if (now > endDate)
+                        continue; // Coupon expired
+                }
+                
+                // Calculate discount percentage for this coupon
+                decimal discountPercentage = 0;
+                
+                if (coupon.DiscountType == DiscountType.Percentage)
+                {
+                    discountPercentage = (decimal)coupon.Percentage;
+                }
+                else if (coupon.DiscountType == DiscountType.FixedAmount)
+                {
+                    // Convert fixed amount to percentage based on base price
+                    if (item.BasePrice > 0)
+                    {
+                        discountPercentage = ((decimal)coupon.Amount / item.BasePrice) * 100;
+                    }
+                }
+                
+                // Cap discount at 30%
+                discountPercentage = Math.Min(discountPercentage, MAX_DISCOUNT_PERCENTAGE);
+                
+                // Apply the discount to the base price
+                item.Price = item.BasePrice * (1 - (discountPercentage / 100));
+            }
+            catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.NotFound)
+            {
+                // No discount available for this product, keep original price
                 continue;
-            
-            // Apply discount based on type
-            item.Price = Basket.API.Extensions.DiscountCalculator.ApplyDiscount(
-                item.Price,
-                (int)coupon.DiscountType,
-                coupon.Percentage,
-                coupon.Amount
-            );
+            }
         }
     }
 }

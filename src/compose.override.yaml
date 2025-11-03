@@ -67,9 +67,26 @@
         
   ### Service Discount ###
   
+  discount.database:
+    restart: always
+    shm_size: 128mb
+    ports:
+      - "${DISCOUNT_POSTGRES_PORT}:5432"
+    volumes:
+      - discount_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${DISCOUNT_POSTGRES_PASSWORD}
+      POSTGRES_USER: ${DISCOUNT_POSTGRES_USER}
+      POSTGRES_DB: ${DISCOUNT_POSTGRES_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DISCOUNT_POSTGRES_USER} -d ${DISCOUNT_POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
   discount.grpc:
     ports:
-      - "6062:${DISCOUNT_API_PORT}" #http
+      - "6062:6062" # gRPC endpoint (HTTP/2)
+      - "6063:6063" # REST API endpoint (HTTP/1.1)
     environment:
-      - ASPNETCORE_HTTP_PORTS=${DISCOUNT_API_PORT}
-      - ConnectionStrings__DiscountConnection=Data Source = discountDatabase
+      - ConnectionStrings__DiscountConnection=Server=discount.database;Port=5432;Database=${DISCOUNT_POSTGRES_DB};Username=${DISCOUNT_POSTGRES_USER};Password=${DISCOUNT_POSTGRES_PASSWORD}

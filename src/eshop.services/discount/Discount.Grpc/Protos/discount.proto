@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 option csharp_namespace = "Discount.Grpc";
 
 package discount;
@@ -37,6 +39,8 @@ message CouponModel {
   bool isActive = 8;
   bool isStackable = 9;
   double maxStackablePercentage = 10;
+  google.protobuf.Timestamp startDate = 11;
+  google.protobuf.Timestamp endDate = 12;
 }
 
 message CreateDiscountRequest {

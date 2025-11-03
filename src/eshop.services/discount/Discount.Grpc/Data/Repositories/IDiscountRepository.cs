@@ -55,4 +55,32 @@ public interface IDiscountRepository
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of active coupons for the product.</returns>
     Task<List<Coupon>> GetActiveByProductNameAsync(string productName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves a paginated and filtered list of coupons.
+    /// </summary>
+    /// <param name="status">Optional status filter.</param>
+    /// <param name="productName">Optional product name filter.</param>
+    /// <param name="couponCode">Optional coupon code filter.</param>
+    /// <param name="isActive">Optional active status filter.</param>
+    /// <param name="pageNumber">Page number (1-based).</param>
+    /// <param name="pageSize">Number of items per page.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Tuple containing the list of coupons and total count.</returns>
+    Task<(List<Coupon> Items, int TotalCount)> GetPagedAsync(
+        CouponStatus? status = null,
+        string? productName = null,
+        string? couponCode = null,
+        bool? isActive = null,
+        int pageNumber = 1,
+        int pageSize = 10,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves a coupon by its coupon code.
+    /// </summary>
+    /// <param name="couponCode">The coupon code to search for.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The coupon if found, otherwise null.</returns>
+    Task<Coupon?> GetByCouponCodeAsync(string couponCode, CancellationToken cancellationToken = default);
 }

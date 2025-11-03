@@ -11,6 +11,14 @@ public class ShoppingCartItem
     
     public string ProductName {get;set;} = string.Empty;
     
+    /// <summary>
+    /// The original price before any discounts are applied.
+    /// </summary>
+    public decimal BasePrice {get;set;}
+    
+    /// <summary>
+    /// The price after applying discounts. If no discount is applied, this will be equal to BasePrice.
+    /// </summary>
     public decimal Price {get;set;}
     
     public Guid ProductId {get;set;}

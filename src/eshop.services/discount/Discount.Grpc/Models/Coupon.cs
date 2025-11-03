@@ -60,4 +60,55 @@ public class Coupon
     /// Only applies when IsStackable is true.
     /// </summary>
     public double MaxStackablePercentage { get; set; } = 30.0;
+    
+    /// <summary>
+    /// Gets or sets the current status of the coupon.
+    /// </summary>
+    public CouponStatus Status { get; set; } = CouponStatus.Active;
+    
+    /// <summary>
+    /// Gets or sets the start date when this coupon becomes active.
+    /// Null means the coupon is active immediately.
+    /// </summary>
+    public DateTime? StartDate { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the end date when this coupon expires.
+    /// Null means the coupon never expires.
+    /// </summary>
+    public DateTime? EndDate { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the minimum purchase amount required to use this coupon.
+    /// </summary>
+    public double MinimumPurchaseAmount { get; set; } = 0.0;
+    
+    /// <summary>
+    /// Gets or sets when this coupon was created.
+    /// </summary>
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    /// <summary>
+    /// Gets or sets when this coupon was last updated.
+    /// </summary>
+    public DateTime? UpdatedAt { get; set; }
+    
+    /// <summary>
+    /// Determines the current effective status of the coupon based on dates and IsActive flag.
+    /// </summary>
+    public CouponStatus GetEffectiveStatus()
+    {
+        if (!IsActive)
+            return CouponStatus.Disabled;
+            
+        var now = DateTime.UtcNow;
+        
+        if (StartDate.HasValue && now < StartDate.Value)
+            return CouponStatus.Upcoming;
+            
+        if (EndDate.HasValue && now > EndDate.Value)
+            return CouponStatus.Expired;
+            
+        return CouponStatus.Active;
+    }
 }

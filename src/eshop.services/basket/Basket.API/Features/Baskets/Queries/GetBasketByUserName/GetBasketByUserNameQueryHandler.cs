@@ -22,6 +22,15 @@ public class GetBasketByUserNameQueryHandler(IBasketRepository repository) : IQu
         var basket = await repository.GetBasketByUserNameAsync(request.UserName, cancellationToken)
            .ConfigureAwait(false);
 
+        // Ensure BasePrice is set for all items (for backward compatibility)
+        foreach (var item in basket.Items)
+        {
+            if (item.BasePrice == 0 && item.Price > 0)
+            {
+                item.BasePrice = item.Price;
+            }
+        }
+
        return new GetBasketByUserNameQueryResult(basket);
     }
 }

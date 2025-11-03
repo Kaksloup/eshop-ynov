@@ -55,6 +55,13 @@
         restart: true
         
   ### Service Discount ###
+  
+  discount.database:
+    image: postgres:latest
+    container_name: discount_database
+    networks:
+      - discount_network
+  
   discount.grpc:
     image: discount.grpc
     container_name: discount_grpc
@@ -65,6 +72,11 @@
     networks:
       - discount_network
       - basket_network
+    depends_on:
+      discount.database:
+        condition: service_healthy
+        required: true
+        restart: true
 
 ### Shared infrastructure ###
 volumes:
@@ -76,6 +88,8 @@ volumes:
     name: redis_data
   ordering_data:
     name: ordering_data
+  discount_data:
+    name: discount_data
 
 
 networks:

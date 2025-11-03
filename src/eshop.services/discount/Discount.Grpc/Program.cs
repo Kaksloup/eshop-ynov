@@ -9,8 +9,27 @@ var builder = WebApplication.CreateBuilder(args);
 
 var configuration = builder.Configuration;
 
+// Configure Kestrel with multiple endpoints
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // gRPC endpoint - HTTP/2 only (port 6062)
+    options.ListenAnyIP(6062, listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
+    });
+    
+    // REST API endpoint - HTTP/1.1 (port 6063)
+    options.ListenAnyIP(6063, listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
+    });
+});
+
 // Add services to the container.
 builder.Services.AddGrpc();
+
+// Add REST API Controllers
+builder.Services.AddControllers();
 
 // Marten - PostgreSQL Document Database (same as Catalog)
 builder.Services.AddMarten(options =>
@@ -36,9 +55,10 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.MapGrpcService<DiscountServiceServer>();
+app.MapControllers();
 
 app.MapGet("/",
     () =>
-        "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
+        "Discount Service - gRPC and REST API endpoints available");
 
 app.Run();

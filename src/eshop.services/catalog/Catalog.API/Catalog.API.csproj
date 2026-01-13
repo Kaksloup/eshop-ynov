@@ -35,7 +35,7 @@
       <Folder Include="Features\Products\Commands\" />
       <Folder Include="Features\Products\Queries\" />
     </ItemGroup>
-    
+
     <ItemGroup>
       <ProjectReference Include="..\..\..\eshop.shared\blocks\BuildingBlocks\BuildingBlocks.csproj" />
     </ItemGroup>

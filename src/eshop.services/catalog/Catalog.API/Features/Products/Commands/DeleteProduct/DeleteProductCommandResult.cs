@@ -1,6 +1,3 @@
 namespace Catalog.API.Features.Products.Commands.DeleteProduct;
 
-public class DeleteProductCommandResult
-{
-    
-}
+public record DeleteProductCommandResult(bool IsSuccessful);

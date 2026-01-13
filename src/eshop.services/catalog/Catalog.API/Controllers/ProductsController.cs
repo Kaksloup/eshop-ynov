@@ -1,4 +1,5 @@
 using Catalog.API.Features.Products.Commands.CreateProduct;
+using Catalog.API.Features.Products.Commands.ImportProduct;
 using Catalog.API.Features.Products.Commands.UpdateProduct;
 using Catalog.API.Features.Products.Commands.DeleteProduct;
 using Catalog.API.Features.Products.Queries.GetProductById;
@@ -110,4 +111,18 @@ public class ProductsController(ISender sender) : ControllerBase
     }
     
     // TODO : faire une ressource pour importer à partir d'un fichier excel les produits
+
+    /// <summary>
+    /// Retrieves products from xlsx files.
+    /// </summary>
+    /// <returns>A collection of products wrapped in an action result.</returns>
+    [HttpPost("import")]
+    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ImportProductCommandResult), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ImportProductCommandResult>> ImportProductFromExcel(IFormFile file)
+    {
+        var result = await sender.Send(new ImportProductCommand(file));
+        if (result.isSuccessful) return Ok();
+        return BadRequest(result.errors);
+    }
 }

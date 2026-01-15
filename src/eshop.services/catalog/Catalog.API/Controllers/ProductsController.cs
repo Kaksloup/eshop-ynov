@@ -105,7 +105,7 @@ public class ProductsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(NotFoundObjectResult), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> DeleteProduct(Guid id)
     {
-        var result = await sender.Send(new DeleteProductCommand { Id = id });
+        var result = await sender.Send(new DeleteProductCommand(id));
         return Ok(result.IsSuccessful);
     }
     

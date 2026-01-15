@@ -6,8 +6,19 @@ using Marten;
 
 namespace Catalog.API.Features.Products.Commands.DeleteProduct;
 
+/// <summary>
+/// 
+/// </summary>
+/// <param name="documentSession"></param>
 public class DeleteProductCommandHandler(IDocumentSession documentSession) : ICommandHandler<DeleteProductCommand, DeleteProductCommandResult>
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="ProductNotFoundException"></exception>
     public async Task<DeleteProductCommandResult> Handle(DeleteProductCommand request,
         CancellationToken cancellationToken)
     {

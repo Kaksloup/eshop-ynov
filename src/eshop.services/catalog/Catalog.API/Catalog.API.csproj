@@ -31,8 +31,11 @@
 
     <ItemGroup>
       <Folder Include="Features\Products\Commands\" />
+      <Folder Include="Features\Products\Queries\" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
+      <Folder Include="Features\Products\Commands\" />
     </ItemGroup>
-
+    
     <ItemGroup>
       <ProjectReference Include="..\..\..\eshop.shared\blocks\BuildingBlocks\BuildingBlocks.csproj" />
     </ItemGroup>

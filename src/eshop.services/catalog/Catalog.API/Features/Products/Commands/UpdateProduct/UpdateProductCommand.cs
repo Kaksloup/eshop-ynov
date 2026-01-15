@@ -17,9 +17,9 @@ namespace Catalog.API.Features.Products.Commands.UpdateProduct;
 /// <param name="Categories">A list of categories to which the product belongs.</param>
 public record UpdateProductCommand(
     Guid Id,
-    string Name,
-    string Description,
-    decimal Price,
-    string ImageFile,
-    List<string> Categories)
+    string? Name,
+    string? Description,
+    decimal? Price,
+    string? ImageFile,
+    List<string>? Categories)
     : ICommand<UpdateProductCommandResult>;

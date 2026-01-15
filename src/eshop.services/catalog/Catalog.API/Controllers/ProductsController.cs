@@ -2,6 +2,7 @@ using Catalog.API.Features.Products.Commands.CreateProduct;
 using Catalog.API.Features.Products.Commands.ImportProduct;
 using Catalog.API.Features.Products.Commands.UpdateProduct;
 using Catalog.API.Features.Products.Commands.DeleteProduct;
+using Catalog.API.Features.Products.Queries.GetProductByCategory;
 using Catalog.API.Features.Products.Queries.GetProductById;
 using Catalog.API.Features.Products.Queries.GetProducts;
 using Catalog.API.Models;
@@ -37,21 +38,25 @@ public class ProductsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves a collection of products within a specified category.
+    /// Retrieves a collection of products within a specified category (supports pagination).
     /// </summary>
     /// <param name="category">The category by which to filter the products.</param>
-    /// <returns>A collection of products belonging to the specified category, if found; otherwise, a bad request response.</returns>
-    [HttpGet("category/{category}")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+    /// <param name="pageNumber">Page number (1-based). Defaults to 1 if not provided or invalid.</param>
+    /// <param name="pageSize">Page size (number of items per page). Defaults to 10 if not provided or invalid.</param>
+    /// <returns>A paginated result of products belonging to the specified category.</returns>
+    [HttpGet("category")]
+    [ProducesResponseType(typeof(PaginatedResult<Product>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(BadRequestObjectResult), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<Product>> GetProductsByCategory(string category)
+    public async Task<ActionResult<PaginatedResult<Product>>> GetProductsByCategory(
+        [FromQuery] string category,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        // TODO
         if (string.IsNullOrWhiteSpace(category))
             return BadRequest("Category is required");
-        
-        var result = await sender.Send(new ());
-        return Ok();
+
+        var result = await sender.Send(new GetProductByCategoryQuery(category, pageNumber, pageSize));
+        return Ok(result.Result);
     }
 
     /// <summary>

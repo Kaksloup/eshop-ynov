@@ -5,6 +5,7 @@ using Catalog.API.Features.Products.Commands.DeleteProduct;
 using Catalog.API.Features.Products.Queries.GetProductById;
 using Catalog.API.Features.Products.Queries.GetProducts;
 using Catalog.API.Models;
+using Ganss.Excel;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using BuildingBlocks.Pagination;
@@ -120,8 +121,20 @@ public class ProductsController(ISender sender) : ControllerBase
     public async Task<ActionResult<ImportProductCommandResult>> ImportProductFromExcel(IFormFile file)
     {
         var result = await sender.Send(new ImportProductCommand(file));
-        Console.WriteLine(result);
         if (result.isSuccessful) return Ok();
         return BadRequest(result.errors);
+    }
+    
+    /// <summary>
+    /// Retrieves products from xlsx files.
+    /// </summary>
+    /// <returns>A collection of products wrapped in an action result.</returns>
+    [HttpPost("export")]
+    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IFormFile), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ExcelMapper>> ExportProduct()
+    {
+        var mapper = new ExcelMapper();
+        return mapper;
     }
 }

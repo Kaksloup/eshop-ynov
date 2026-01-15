@@ -109,8 +109,6 @@ public class ProductsController(ISender sender) : ControllerBase
         var result = await sender.Send(new DeleteProductCommand(id));
         return Ok(result.IsSuccessful);
     }
-    
-    // TODO : faire une ressource pour importer à partir d'un fichier excel les produits
 
     /// <summary>
     /// Retrieves products from xlsx files.
@@ -122,6 +120,7 @@ public class ProductsController(ISender sender) : ControllerBase
     public async Task<ActionResult<ImportProductCommandResult>> ImportProductFromExcel(IFormFile file)
     {
         var result = await sender.Send(new ImportProductCommand(file));
+        Console.WriteLine(result);
         if (result.isSuccessful) return Ok();
         return BadRequest(result.errors);
     }

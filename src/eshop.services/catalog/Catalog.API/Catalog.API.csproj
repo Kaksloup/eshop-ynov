@@ -19,6 +19,7 @@
         <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
         <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
         <PackageReference Include="EPPlus" Version="8.4.1" />
+        <PackageReference Include="ExcelMapper" Version="6.0.615" />
         <PackageReference Include="Mapster" Version="7.4.0" />
         <PackageReference Include="Marten" Version="8.3.1" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />

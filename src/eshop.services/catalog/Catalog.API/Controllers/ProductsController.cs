@@ -126,7 +126,7 @@ public class ProductsController(ISender sender) : ControllerBase
     public async Task<ActionResult<ImportProductCommandResult>> ImportProductFromExcel(IFormFile file)
     {
         var result = await sender.Send(new ImportProductCommand(file));
-        if (result.isSuccessful) return Ok();
+        if (result.isSuccessful) return Ok(result);
         return BadRequest(result.errors);
     }
     
@@ -135,12 +135,11 @@ public class ProductsController(ISender sender) : ControllerBase
     /// </summary>
     /// <returns>A collection of products wrapped in an action result.</returns>
     ///
-    [HttpPost("export")]
-    public async Task<ActionResult<string>> ExportProduct()
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportProduct()
     {
         var products = await sender.Send(new GetProductsQuery(1, int.MaxValue));
-
-        // Map to a simple DTO that ExcelMapper can handle
+        
         var exportData = products.Result.Data.Select(p => new
         {
             Name = p.Name,
@@ -150,21 +149,19 @@ public class ProductsController(ISender sender) : ControllerBase
             Categories = string.Join(", ", p.Categories)
         }).ToList();
 
-        var exportsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Exports");
-        
-        if (!Directory.Exists(exportsFolder))
-            Directory.CreateDirectory(exportsFolder);
-
-        var filePath = Path.Combine(exportsFolder, "products.xlsx");
-
+        // Create Excel file in memory
         var mapper = new ExcelMapper();
-        mapper.Save(filePath, exportData, "Products");
-
-        return Ok(new 
-        {
-            message = "Products exported",
-            fileName = "products.xlsx",
-            downloadUrl = "/exports/products.xlsx"
-        });
+    
+        using var stream = new MemoryStream();
+        mapper.Save(stream, exportData, "Products");
+        stream.Position = 0;
+    
+        var fileName = $"products_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+        
+        return File(
+            stream.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName
+        );
     }
 }

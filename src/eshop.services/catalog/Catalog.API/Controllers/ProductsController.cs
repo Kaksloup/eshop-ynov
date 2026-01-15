@@ -1,9 +1,11 @@
 using Catalog.API.Features.Products.Commands.CreateProduct;
+using Catalog.API.Features.Products.Commands.ImportProduct;
 using Catalog.API.Features.Products.Commands.UpdateProduct;
 using Catalog.API.Features.Products.Commands.DeleteProduct;
 using Catalog.API.Features.Products.Queries.GetProductById;
 using Catalog.API.Features.Products.Queries.GetProducts;
 using Catalog.API.Models;
+using Ganss.Excel;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using BuildingBlocks.Pagination;
@@ -108,6 +110,56 @@ public class ProductsController(ISender sender) : ControllerBase
         var result = await sender.Send(new DeleteProductCommand(id));
         return Ok(result.IsSuccessful);
     }
+
+    /// <summary>
+    /// Retrieves products from xlsx files.
+    /// </summary>
+    /// <returns>A collection of products wrapped in an action result.</returns>
+    [HttpPost("import")]
+    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ImportProductCommandResult), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ImportProductCommandResult>> ImportProductFromExcel(IFormFile file)
+    {
+        var result = await sender.Send(new ImportProductCommand(file));
+        if (result.isSuccessful) return Ok();
+        return BadRequest(result.errors);
+    }
     
-    // TODO : faire une ressource pour importer à partir d'un fichier excel les produits
+    /// <summary>
+    /// Retrieves products from xlsx files.
+    /// </summary>
+    /// <returns>A collection of products wrapped in an action result.</returns>
+    ///
+    [HttpPost("export")]
+    public async Task<ActionResult<string>> ExportProduct()
+    {
+        var products = await sender.Send(new GetProductsQuery(1, int.MaxValue));
+
+        // Map to a simple DTO that ExcelMapper can handle
+        var exportData = products.Result.Data.Select(p => new
+        {
+            Name = p.Name,
+            Description = p.Description,
+            Price = p.Price,
+            ImageFile = p.ImageFile,
+            Categories = string.Join(", ", p.Categories)
+        }).ToList();
+
+        var exportsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Exports");
+        
+        if (!Directory.Exists(exportsFolder))
+            Directory.CreateDirectory(exportsFolder);
+
+        var filePath = Path.Combine(exportsFolder, "products.xlsx");
+
+        var mapper = new ExcelMapper();
+        mapper.Save(filePath, exportData, "Products");
+
+        return Ok(new 
+        {
+            message = "Products exported",
+            fileName = "products.xlsx",
+            downloadUrl = "/exports/products.xlsx"
+        });
+    }
 }

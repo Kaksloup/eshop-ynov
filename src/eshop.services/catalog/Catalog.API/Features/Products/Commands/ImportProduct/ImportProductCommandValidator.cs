@@ -1,5 +1,7 @@
 using Catalog.API.Features.Products.Commands.CreateProduct;
+using Catalog.API.Models;
 using FluentValidation;
+using OfficeOpenXml;
 
 namespace Catalog.API.Features.Products.Commands.ImportProduct;
 
@@ -23,7 +25,6 @@ public class ImportProductCommandValidator: AbstractValidator<ImportProductComma
     
     public ImportProductCommandValidator()
     {
-        
         RuleFor(x => x.FormFile)
             .NotNull().WithMessage("File is required")
             .Must(file => file.Length > 0).WithMessage("File is empty")

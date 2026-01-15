@@ -3,6 +3,7 @@ using Catalog.API.Exceptions;
 using Catalog.API.Features.Products.Commands.CreateProduct;
 using Catalog.API.Features.Products.Commands.UpdateProduct;
 using Catalog.API.Models;
+using FluentValidation;
 using Mapster;
 using Marten;
 using MediatR;
@@ -28,6 +29,7 @@ public class ImportProductCommandHandler(IDocumentSession documentSession, ISend
     {
         
         var errors = new List<string>();
+        var createErrors = new List<string>();
         int created = 0;
         int updated = 0;
         int total = 0;
@@ -42,6 +44,11 @@ public class ImportProductCommandHandler(IDocumentSession documentSession, ISend
 
             using var package = new ExcelPackage(stream);
             var worksheet = package.Workbook.Worksheets[0];
+            
+            var excelValidator = new ExcelWorksheetValidator();
+            var validationResult = excelValidator.Validate(worksheet);
+            if (!validationResult.IsValid) throw new ValidationException(validationResult.Errors);
+            
             var rowCount = worksheet.Dimension?.Rows ?? 0;
 
             for (int row = 2; row <= rowCount; row++)
@@ -53,7 +60,6 @@ public class ImportProductCommandHandler(IDocumentSession documentSession, ISend
                     var priceString = worksheet.Cells[row, 3].Value?.ToString();
                     var imageFile = worksheet.Cells[row, 4].Value?.ToString();
                     var categoryString = worksheet.Cells[row, 5].Value?.ToString();
-                    Console.WriteLine(name + description + priceString + imageFile + categoryString);
                     if (string.IsNullOrWhiteSpace(name))
                     {
                         errors.Add($"Row {row}: Name is required");

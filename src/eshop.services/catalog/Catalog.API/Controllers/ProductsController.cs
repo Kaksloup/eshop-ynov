@@ -129,12 +129,37 @@ public class ProductsController(ISender sender) : ControllerBase
     /// Retrieves products from xlsx files.
     /// </summary>
     /// <returns>A collection of products wrapped in an action result.</returns>
+    ///
     [HttpPost("export")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(IFormFile), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<ExcelMapper>> ExportProduct()
+    public async Task<ActionResult<string>> ExportProduct()
     {
+        var products = await sender.Send(new GetProductsQuery(1, int.MaxValue));
+
+        // Map to a simple DTO that ExcelMapper can handle
+        var exportData = products.Result.Data.Select(p => new
+        {
+            Name = p.Name,
+            Description = p.Description,
+            Price = p.Price,
+            ImageFile = p.ImageFile,
+            Categories = string.Join(", ", p.Categories)
+        }).ToList();
+
+        var exportsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Exports");
+        
+        if (!Directory.Exists(exportsFolder))
+            Directory.CreateDirectory(exportsFolder);
+
+        var filePath = Path.Combine(exportsFolder, "products.xlsx");
+
         var mapper = new ExcelMapper();
-        return mapper;
+        mapper.Save(filePath, exportData, "Products");
+
+        return Ok(new 
+        {
+            message = "Products exported",
+            fileName = "products.xlsx",
+            downloadUrl = "/exports/products.xlsx"
+        });
     }
 }

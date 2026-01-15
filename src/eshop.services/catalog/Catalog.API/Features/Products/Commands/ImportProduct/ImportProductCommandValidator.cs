@@ -21,7 +21,7 @@ public class ImportProductCommandValidator: AbstractValidator<ImportProductComma
     /// Ensures that the command meets necessary requirements such as non-empty properties
     /// and valid data constraints for creating a product.
     /// </remarks>
-    private static readonly string[] AllowedExtensions = { ".xlsx", ".xls" };
+    private static readonly string[] AllowedExtensions = { ".xlsx", ".xls", ".csv" };
     
     public ImportProductCommandValidator()
     {

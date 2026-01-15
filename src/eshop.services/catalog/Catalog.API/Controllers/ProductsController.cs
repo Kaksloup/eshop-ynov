@@ -1,9 +1,15 @@
 using Catalog.API.Features.Products.Commands.CreateProduct;
+using Catalog.API.Features.Products.Commands.ImportProduct;
 using Catalog.API.Features.Products.Commands.UpdateProduct;
+using Catalog.API.Features.Products.Commands.DeleteProduct;
+using Catalog.API.Features.Products.Queries.GetProductByCategory;
 using Catalog.API.Features.Products.Queries.GetProductById;
+using Catalog.API.Features.Products.Queries.GetProducts;
 using Catalog.API.Models;
+using Ganss.Excel;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using BuildingBlocks.Pagination;
 
 namespace Catalog.API.Controllers;
 
@@ -32,36 +38,39 @@ public class ProductsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves a collection of products within a specified category.
+    /// Retrieves a collection of products within a specified category (supports pagination).
     /// </summary>
     /// <param name="category">The category by which to filter the products.</param>
-    /// <returns>A collection of products belonging to the specified category, if found; otherwise, a bad request response.</returns>
-    [HttpGet("category/{category}")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+    /// <param name="pageNumber">Page number (1-based). Defaults to 1 if not provided or invalid.</param>
+    /// <param name="pageSize">Page size (number of items per page). Defaults to 10 if not provided or invalid.</param>
+    /// <returns>A paginated result of products belonging to the specified category.</returns>
+    [HttpGet("category")]
+    [ProducesResponseType(typeof(PaginatedResult<Product>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(BadRequestObjectResult), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<Product>> GetProductsByCategory(string category)
+    public async Task<ActionResult<PaginatedResult<Product>>> GetProductsByCategory(
+        [FromQuery] string category,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        // TODO
         if (string.IsNullOrWhiteSpace(category))
             return BadRequest("Category is required");
-        
-        var result = await sender.Send(new ());
-        return Ok();
+
+        var result = await sender.Send(new GetProductByCategoryQuery(category, pageNumber, pageSize));
+        return Ok(result.Result);
     }
 
     /// <summary>
     /// Retrieves a collection of products from the catalog.
     /// </summary>
-    /// <returns>A collection of products wrapped in an action result.</returns>
+    /// <returns>A collection of products wrapped in an action result (supports pagination).</returns>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Product>>> GetProducts(
-        [FromQuery] int pageNumber
-       , [FromQuery] int pageSize)
+    [ProducesResponseType(typeof(PaginatedResult<Product>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PaginatedResult<Product>>> GetProducts(
+        [FromQuery] int pageNumber = 1
+       , [FromQuery] int pageSize = 10)
     {
-        // TODO
-        var result = await sender.Send(new ()); 
-        return Ok();
+        var result = await sender.Send(new GetProductsQuery(pageNumber, pageSize));
+        return Ok(result.Result);
     }
 
     /// <summary>
@@ -101,12 +110,61 @@ public class ProductsController(ISender sender) : ControllerBase
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(NotFoundObjectResult), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Product>> DeleteProduct(Guid id)
+    public async Task<ActionResult<bool>> DeleteProduct(Guid id)
     {
-        // TODO
-        var result = await sender.Send(new ());
-        return Ok();
+        var result = await sender.Send(new DeleteProductCommand(id));
+        return Ok(result.IsSuccessful);
+    }
+
+    /// <summary>
+    /// Retrieves products from xlsx files.
+    /// </summary>
+    /// <returns>A collection of products wrapped in an action result.</returns>
+    [HttpPost("import")]
+    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ImportProductCommandResult), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ImportProductCommandResult>> ImportProductFromExcel(IFormFile file)
+    {
+        var result = await sender.Send(new ImportProductCommand(file));
+        if (result.isSuccessful) return Ok();
+        return BadRequest(result.errors);
     }
     
-    // TODO : faire une ressource pour importer à partir d'un fichier excel les produits
+    /// <summary>
+    /// Retrieves products from xlsx files.
+    /// </summary>
+    /// <returns>A collection of products wrapped in an action result.</returns>
+    ///
+    [HttpPost("export")]
+    public async Task<ActionResult<string>> ExportProduct()
+    {
+        var products = await sender.Send(new GetProductsQuery(1, int.MaxValue));
+
+        // Map to a simple DTO that ExcelMapper can handle
+        var exportData = products.Result.Data.Select(p => new
+        {
+            Name = p.Name,
+            Description = p.Description,
+            Price = p.Price,
+            ImageFile = p.ImageFile,
+            Categories = string.Join(", ", p.Categories)
+        }).ToList();
+
+        var exportsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Exports");
+        
+        if (!Directory.Exists(exportsFolder))
+            Directory.CreateDirectory(exportsFolder);
+
+        var filePath = Path.Combine(exportsFolder, "products.xlsx");
+
+        var mapper = new ExcelMapper();
+        mapper.Save(filePath, exportData, "Products");
+
+        return Ok(new 
+        {
+            message = "Products exported",
+            fileName = "products.xlsx",
+            downloadUrl = "/exports/products.xlsx"
+        });
+    }
 }

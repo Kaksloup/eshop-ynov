@@ -20,7 +20,7 @@
         <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
         <PackageReference Include="Mapster" Version="7.4.0" />
         <PackageReference Include="Marten" Version="8.3.1" />
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5"/>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
     </ItemGroup>
 
     <ItemGroup>
@@ -31,7 +31,6 @@
 
     <ItemGroup>
       <Folder Include="Features\Products\Commands\" />
-      <Folder Include="Features\Products\Queries\" />
     </ItemGroup>
 
     <ItemGroup>

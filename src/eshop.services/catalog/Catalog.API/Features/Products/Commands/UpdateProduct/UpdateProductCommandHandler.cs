@@ -35,20 +35,20 @@ public class UpdateProductCommandHandler(IDocumentSession documentSession) : ICo
 
         var patch = documentSession.Patch<Product>(product.Id);
 
-        if (product.Name != null)
+        if (!string.IsNullOrWhiteSpace(product.Name))
             patch.Set(x => x.Name, product.Name);
 
         if (product.Price.HasValue)
-            patch.Set(x => x.Price, product.Price);
+            patch.Set(x => x.Price, product.Price.Value);
 
-        if (product.Description != null)
+        if (!string.IsNullOrWhiteSpace(product.Description))
             patch.Set(x => x.Description, product.Description);
 
-        if (product.ImageFile != null)
+        if (!string.IsNullOrWhiteSpace(product.ImageFile))
             patch.Set(x => x.ImageFile, product.ImageFile);
 
-        if (product.Categories != null)
-            patch.Set(x => x.Categories, product.Categories);
+        if (product.Price.HasValue)
+            patch.Set(x => x.Price, product.Price);
 
         await documentSession.SaveChangesAsync(cancellationToken);
 

@@ -35,5 +35,5 @@ public interface IBasketRepository
     /// <returns>
     /// A task that represents the asynchronous operation. The task result contains the created shopping cart.
     /// </returns>
-    Task<ShoppingCart> CreateBasketAsync(ShoppingCart basket, CancellationToken cancellationToken = default);
+    Task<ShoppingCart> CreateBasketAsync(ShoppingCart basket, CancellationToken cancellationToken = default, TimeSpan? cacheExpiration = null);
 }

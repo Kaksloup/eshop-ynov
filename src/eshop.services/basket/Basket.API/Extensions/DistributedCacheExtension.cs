@@ -41,9 +41,15 @@ public static class DistributedCacheExtensions
     /// in the cache.
     /// </returns>
     public static Task SetObjectAsync<T>(this IDistributedCache cache, string key, T value,
-        CancellationToken token = default)
+        CancellationToken token = default, TimeSpan? expiration = null)
     {
         var data = JsonSerializer.SerializeToUtf8Bytes(value);
-        return cache.SetAsync(key, data, token);
+        
+        var options = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = expiration != null && expiration > TimeSpan.FromMinutes(0) ? expiration : TimeSpan.FromMinutes(1)
+        };
+        
+        return cache.SetAsync(key, data, options, token);
     }
 }

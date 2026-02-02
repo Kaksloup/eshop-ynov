@@ -70,11 +70,11 @@ public class BasketRepositoryCache(IBasketRepository repository, IDistributedCac
     /// <param name="cancellationToken">An optional token to monitor for cancellation requests.</param>
     /// <returns>The created shopping cart.</returns>
     public async Task<ShoppingCart> CreateBasketAsync(ShoppingCart basket,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, TimeSpan? cacheExpiration = null)
     {
         var createdBasket = await repository.CreateBasketAsync(basket, cancellationToken);
         var cacheKey = GenerateKey(basket.UserName);
-        await cache.SetObjectAsync(cacheKey, createdBasket, cancellationToken);
+        await cache.SetObjectAsync(cacheKey, createdBasket, cancellationToken,  cacheExpiration);
         return createdBasket;
     }
 }
